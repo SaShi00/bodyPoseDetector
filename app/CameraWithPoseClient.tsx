@@ -1,5 +1,4 @@
 // 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
-
 'use client';
 
 import React, { useRef, useEffect, useState } from 'react';
@@ -19,15 +18,48 @@ function getAngle(a: {x: number, y: number}, b: {x: number, y: number}, c: {x: n
 const MODEL_ASSET_PATH = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
 const WASM_PATH = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm';
 
+type FacingMode = 'user' | 'environment';
+
 const CameraWithPoseClient: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [dimensions, setDimensions] = useState<{w: number; h: number}>({w: 0, h: 0});
-  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
+  const [facingMode, setFacingMode] = useState<FacingMode>('user');
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [hasFront, setHasFront] = useState(false);
+  const [hasBack, setHasBack] = useState(false);
+
+  // Detect available cameras on mount
+  useEffect(() => {
+    // Some browsers require camera access before labels are available
+    navigator.mediaDevices.getUserMedia({ video: true }).then((tempStream) => {
+      navigator.mediaDevices.enumerateDevices().then((devices) => {
+        let foundFront = false;
+        let foundBack = false;
+        devices.forEach((device) => {
+          if (device.kind === 'videoinput') {
+            const label = device.label.toLowerCase();
+            if (label.includes('front') || label.includes('user')) foundFront = true;
+            if (label.includes('back') || label.includes('environment')) foundBack = true;
+          }
+        });
+        // Fallback: if only 1 camera, assume it's front
+        if (!foundFront && !foundBack) {
+          const videoInputs = devices.filter(d => d.kind === 'videoinput');
+          if (videoInputs.length === 1) foundFront = true;
+        }
+        setHasFront(foundFront);
+        setHasBack(foundBack);
+        // Always stop the temp stream
+        tempStream.getTracks().forEach(track => track.stop());
+      });
+    }).catch(() => {
+      // If permission denied or no camera, do nothing
+    });
+  }, []);
 
   // Helper to start camera with selected facingMode
-  const startCamera = async (mode: 'user' | 'environment') => {
+  const startCamera = async (mode: FacingMode) => {
     // Stop previous stream
     if (stream) {
       stream.getTracks().forEach(track => track.stop());
@@ -154,21 +186,23 @@ const CameraWithPoseClient: React.FC = () => {
 
   return (
     <div style={{ position: 'relative', width: dimensions.w, height: dimensions.h }}>
-      <div style={{ position: 'absolute', zIndex: 10, left: 10, top: 10 }}>
-        <button
-          onClick={() => setFacingMode('user')}
-          disabled={facingMode === 'user'}
-          style={{ marginRight: 8 }}
-        >
-          Front Camera
-        </button>
-        <button
-          onClick={() => setFacingMode('environment')}
-          disabled={facingMode === 'environment'}
-        >
-          Back Camera
-        </button>
-      </div>
+      {(hasFront && hasBack) && (
+        <div style={{ position: 'absolute', zIndex: 10, left: 10, top: 10 }}>
+          <button
+            onClick={() => setFacingMode('user')}
+            disabled={facingMode === 'user'}
+            style={{ marginRight: 8 }}
+          >
+            Front Camera
+          </button>
+          <button
+            onClick={() => setFacingMode('environment')}
+            disabled={facingMode === 'environment'}
+          >
+            Back Camera
+          </button>
+        </div>
+      )}
       <video
         ref={videoRef}
         autoPlay
