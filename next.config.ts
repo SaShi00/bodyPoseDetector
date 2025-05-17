@@ -3,7 +3,7 @@ import type { NextConfig } from 'next'
 const isProd = process.env.NODE_ENV === 'production'
 
 // Replace with your actual GitHub repo name
-const repoName = 'your-repository-name'
+const repoName = 'bodyPoseDetector'
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
