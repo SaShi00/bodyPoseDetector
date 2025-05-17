@@ -30,14 +30,14 @@ const CameraWithPoseClient: React.FC = () => {
   const [devices, setDevices] = useState<CameraDevice[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [isCameraOn, setIsCameraOn] = useState(false);
 
   // Get camera devices after permission is granted
   useEffect(() => {
     const getDevices = async () => {
       try {
-        // Request permission so labels are available[1][3][7]
         await navigator.mediaDevices.getUserMedia({ video: true });
-        const allDevices = await navigator.mediaDevices.enumerateDevices(); // [1][2][3][5][7]
+        const allDevices = await navigator.mediaDevices.enumerateDevices();
         const videoDevices = allDevices
           .filter((d) => d.kind === 'videoinput')
           .map((d, i) => ({
@@ -59,17 +59,18 @@ const CameraWithPoseClient: React.FC = () => {
     getDevices();
   }, []);
 
-  // Start the camera when selectedDeviceId changes
-  useEffect(() => {
+  // Start camera
+  const handleStartCamera = async () => {
     if (!selectedDeviceId) return;
-    // Stop previous stream if needed
     if (stream) {
       stream.getTracks().forEach(track => track.stop());
     }
-    navigator.mediaDevices.getUserMedia({
-      video: { deviceId: { exact: selectedDeviceId } }
-    }).then((newStream) => {
+    try {
+      const newStream = await navigator.mediaDevices.getUserMedia({
+        video: { deviceId: { exact: selectedDeviceId } }
+      });
       setStream(newStream);
+      setIsCameraOn(true);
       if (videoRef.current) videoRef.current.srcObject = newStream;
 
       // Wait for video metadata to get dimensions
@@ -83,9 +84,31 @@ const CameraWithPoseClient: React.FC = () => {
           }
         };
       }
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDeviceId]);
+    } catch (err) {
+      alert('Could not start camera. Please allow camera access and try again.');
+    }
+  };
+
+  // Stop camera
+  const handleStopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+    setIsCameraOn(false);
+    setDimensions({w: 0, h: 0});
+    if (canvasRef.current) {
+      const ctx = canvasRef.current.getContext('2d');
+      if (ctx) ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    }
+  };
+
+  // Stop stream on unmount
+  useEffect(() => {
+    return () => {
+      if (stream) stream.getTracks().forEach(track => track.stop());
+    };
+  }, [stream]);
 
   // Pose detection and drawing
   useEffect(() => {
@@ -95,7 +118,7 @@ const CameraWithPoseClient: React.FC = () => {
     let isMounted = true;
 
     const setup = async () => {
-      if (!dimensions.w || !dimensions.h) return;
+      if (!isCameraOn || !dimensions.w || !dimensions.h) return;
       const vision = await FilesetResolver.forVisionTasks(WASM_PATH);
       poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
         baseOptions: {
@@ -112,7 +135,8 @@ const CameraWithPoseClient: React.FC = () => {
           videoRef.current &&
           poseLandmarker &&
           drawingUtils &&
-          canvasRef.current
+          canvasRef.current &&
+          isCameraOn
         ) {
           const ctx = canvasRef.current.getContext('2d')!;
           ctx.clearRect(0, 0, dimensions.w, dimensions.h);
@@ -162,7 +186,7 @@ const CameraWithPoseClient: React.FC = () => {
             }
           }
         }
-        if (isMounted) animationFrameId = requestAnimationFrame(processFrame);
+        if (isMounted && isCameraOn) animationFrameId = requestAnimationFrame(processFrame);
       };
       processFrame();
     };
@@ -173,15 +197,18 @@ const CameraWithPoseClient: React.FC = () => {
       isMounted = false;
       cancelAnimationFrame(animationFrameId);
     };
-  }, [dimensions.w, dimensions.h]);
+  }, [dimensions.w, dimensions.h, isCameraOn]);
 
   return (
-    <div style={{ position: 'relative', width: dimensions.w, height: dimensions.h }}>
-      {devices.length > 1 && (
-        <div style={{ position: 'absolute', zIndex: 10, left: 10, top: 10, background: 'rgba(255,255,255,0.8)', borderRadius: 8, padding: 4 }}>
+    <div>
+      {/* Controls above the camera area */}
+      <div style={{ marginBottom: 16 }}>
+        {devices.length > 1 && (
           <select
             value={selectedDeviceId || ''}
             onChange={e => setSelectedDeviceId(e.target.value)}
+            disabled={isCameraOn}
+            style={{ marginRight: 8 }}
           >
             {devices.map((device) => (
               <option key={device.deviceId} value={device.deviceId}>
@@ -189,20 +216,29 @@ const CameraWithPoseClient: React.FC = () => {
               </option>
             ))}
           </select>
-        </div>
-      )}
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        style={{ display: 'none' }}
-      />
-      <canvas
-        ref={canvasRef}
-        width={dimensions.w}
-        height={dimensions.h}
-        style={{ position: 'absolute', top: 0, left: 0 }}
-      />
+        )}
+        <button onClick={handleStartCamera} disabled={isCameraOn || !selectedDeviceId} style={{ marginRight: 8 }}>
+          Start Camera
+        </button>
+        <button onClick={handleStopCamera} disabled={!isCameraOn}>
+          Stop Camera
+        </button>
+      </div>
+      {/* Camera and overlay area */}
+      <div style={{ position: 'relative', width: dimensions.w || 400, height: dimensions.h || 300, background: '#222' }}>
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          style={{ display: 'none' }}
+        />
+        <canvas
+          ref={canvasRef}
+          width={dimensions.w || 400}
+          height={dimensions.h || 300}
+          style={{ position: 'absolute', top: 0, left: 0 }}
+        />
+      </div>
     </div>
   );
 };
