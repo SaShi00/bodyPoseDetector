@@ -1,150 +1,4 @@
-// const WIDTH = 640;
-// const HEIGHT = 480;
-// const MODEL_ASSET_PATH = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
-
-
-// 'use client';
-
-// import React, { useRef, useEffect, useState } from 'react';
-// import { PoseLandmarker, FilesetResolver, DrawingUtils } from '@mediapipe/tasks-vision';
-
-// // Utility to calculate angle at point b (in degrees)
-// function getAngle(a: {x: number, y: number}, b: {x: number, y: number}, c: {x: number, y: number}) {
-//   const ab = { x: a.x - b.x, y: a.y - b.y };
-//   const cb = { x: c.x - b.x, y: c.y - b.y };
-//   const dot = ab.x * cb.x + ab.y * cb.y;
-//   const magAB = Math.sqrt(ab.x * ab.x + ab.y * ab.y);
-//   const magCB = Math.sqrt(cb.x * cb.x + cb.y * cb.y);
-//   const cosine = dot / (magAB * magCB);
-//   return Math.acos(Math.max(-1, Math.min(1, cosine))) * (180 / Math.PI);
-// }
-
-// const MODEL_ASSET_PATH = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
-// // 'https://storage.googleapis.com/mediapipe-tasks/pose_landmarker/lite/pose_landmarker_lite.task';
-// const WASM_PATH = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm';
-
-// const CameraWithPoseClient: React.FC = () => {
-//   const videoRef = useRef<HTMLVideoElement>(null);
-//   const canvasRef = useRef<HTMLCanvasElement>(null);
-//   const [dimensions, setDimensions] = useState<{w: number; h: number}>({w: 0, h: 0});
-
-//   useEffect(() => {
-//     let animationFrameId: number;
-//     let poseLandmarker: PoseLandmarker | null = null;
-//     let drawingUtils: DrawingUtils | null = null;
-//     let isMounted = true;
-
-//     const setup = async () => {
-//       // 1. Get camera stream
-//       const stream = await navigator.mediaDevices.getUserMedia({
-//         video: { facingMode: 'user' }
-//       });
-//       if (videoRef.current) videoRef.current.srcObject = stream;
-
-//       // 2. Wait for the video to be ready and get its actual size
-//       await new Promise<void>((resolve) => {
-//         if (!videoRef.current) return resolve();
-//         videoRef.current.onloadedmetadata = () => {
-//           if (videoRef.current) {
-//             const w = videoRef.current.videoWidth;
-//             const h = videoRef.current.videoHeight;
-//             setDimensions({w, h});
-//           }
-//           resolve();
-//         };
-//       });
-
-//       // 3. Load model and drawing utils
-//       const vision = await FilesetResolver.forVisionTasks(WASM_PATH);
-//       poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
-//         baseOptions: {
-//           modelAssetPath: MODEL_ASSET_PATH,
-//           delegate: 'CPU',
-//         },
-//         runningMode: 'VIDEO',
-//         numPoses: 1,
-//       });
-//       drawingUtils = new DrawingUtils(canvasRef.current!.getContext('2d')!);
-
-//       // 4. Start processing frames
-//       const processFrame = async () => {
-//         if (
-//           videoRef.current &&
-//           poseLandmarker &&
-//           drawingUtils &&
-//           canvasRef.current
-//         ) {
-//           const ctx = canvasRef.current.getContext('2d')!;
-//           ctx.clearRect(0, 0, dimensions.w, dimensions.h);
-
-//           // Draw video frame to canvas at actual size
-//           ctx.drawImage(videoRef.current, 0, 0, dimensions.w, dimensions.h);
-
-//           // Run pose detection
-//           const results = poseLandmarker.detectForVideo(
-//             videoRef.current,
-//             performance.now()
-//           );
-
-//           if (results.landmarks && results.landmarks.length > 0) {
-//             const lm = results.landmarks[0];
-
-//             // Use left side: shoulder(11), hip(23), knee(25)
-//             const leftShoulder = lm[11];
-//             const leftHip = lm[23];
-//             const leftKnee = lm[25];
-
-//             let backAngle = null;
-//             if (leftShoulder && leftHip && leftKnee) {
-//               backAngle = getAngle(leftShoulder, leftHip, leftKnee);
-//             }
-//             // Threshold: e.g., <140° is "bent"
-//             const isBent = backAngle !== null && backAngle < 140;
-
-//             drawingUtils.drawLandmarks(
-//               lm,
-//               { color: isBent ? '#FF0000' : '#00FF00', lineWidth: 2 }
-//             );
-//             drawingUtils.drawConnectors(
-//               lm,
-//               PoseLandmarker.POSE_CONNECTIONS,
-//               { color: isBent ? '#FF0000' : '#00FF00', lineWidth: 4 }
-//             );
-//           }
-//         }
-//         if (isMounted) animationFrameId = requestAnimationFrame(processFrame);
-//       };
-//       processFrame();
-//     };
-
-//     setup();
-
-//     return () => {
-//       isMounted = false;
-//       cancelAnimationFrame(animationFrameId);
-//       poseLandmarker?.close();
-//     };
-//   }, [dimensions.w, dimensions.h]);
-
-//   return (
-//     <div style={{ position: 'relative', width: dimensions.w, height: dimensions.h }}>
-//       <video
-//         ref={videoRef}
-//         autoPlay
-//         playsInline
-//         style={{ display: 'none' }}
-//       />
-//       <canvas
-//         ref={canvasRef}
-//         width={dimensions.w}
-//         height={dimensions.h}
-//         style={{ position: 'absolute', top: 0, left: 0 }}
-//       />
-//     </div>
-//   );
-// };
-
-// export default CameraWithPoseClient;
+// 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
 
 'use client';
 
@@ -152,7 +6,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { PoseLandmarker, FilesetResolver, DrawingUtils } from '@mediapipe/tasks-vision';
 
 // Utility to calculate angle at point b (in degrees)
-function getAngle(a: {x: number, y: number}, b: {x: number, y: number}, c: {x: number, y: number}) {
+function getAngle(a: {x: number, y: number}, b: {x: number, y: number}, c: {x: number, y: number}): number {
   const ab = { x: a.x - b.x, y: a.y - b.y };
   const cb = { x: c.x - b.x, y: c.y - b.y };
   const dot = ab.x * cb.x + ab.y * cb.y;
@@ -169,18 +23,21 @@ const CameraWithPoseClient: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [dimensions, setDimensions] = useState<{w: number; h: number}>({w: 0, h: 0});
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
+  const [stream, setStream] = useState<MediaStream | null>(null);
 
-  useEffect(() => {
-    let animationFrameId: number;
-    let poseLandmarker: PoseLandmarker | null = null;
-    let drawingUtils: DrawingUtils | null = null;
-    let isMounted = true;
-
-    const setup = async () => {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user' }
+  // Helper to start camera with selected facingMode
+  const startCamera = async (mode: 'user' | 'environment') => {
+    // Stop previous stream
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+    }
+    try {
+      const newStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: mode }
       });
-      if (videoRef.current) videoRef.current.srcObject = stream;
+      setStream(newStream);
+      if (videoRef.current) videoRef.current.srcObject = newStream;
 
       await new Promise<void>((resolve) => {
         if (!videoRef.current) return resolve();
@@ -193,7 +50,29 @@ const CameraWithPoseClient: React.FC = () => {
           resolve();
         };
       });
+    } catch (err) {
+      alert('Could not access camera. Please allow camera access and try again.');
+    }
+  };
 
+  // Start camera when facingMode changes
+  useEffect(() => {
+    startCamera(facingMode);
+    // Clean up on unmount
+    return () => {
+      if (stream) stream.getTracks().forEach(track => track.stop());
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [facingMode]);
+
+  useEffect(() => {
+    let animationFrameId: number;
+    let poseLandmarker: PoseLandmarker | null = null;
+    let drawingUtils: DrawingUtils | null = null;
+    let isMounted = true;
+
+    const setup = async () => {
+      if (!dimensions.w || !dimensions.h) return;
       const vision = await FilesetResolver.forVisionTasks(WASM_PATH);
       poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
         baseOptions: {
@@ -224,8 +103,6 @@ const CameraWithPoseClient: React.FC = () => {
 
           if (results.landmarks && results.landmarks.length > 0) {
             const lm = results.landmarks[0];
-
-            // Use left side: shoulder(11), hip(23), knee(25)
             const leftShoulder = lm[11];
             const leftHip = lm[23];
             const leftKnee = lm[25];
@@ -246,14 +123,13 @@ const CameraWithPoseClient: React.FC = () => {
               { color: isBent ? '#FF0000' : '#00FF00', lineWidth: 4 }
             );
 
-            // === Draw the angle as text on the canvas ===
+            // Draw the angle as text on the canvas
             if (backAngle !== null) {
               ctx.save();
               ctx.font = '32px Arial';
               ctx.fillStyle = isBent ? '#FF0000' : '#00FF00';
               ctx.strokeStyle = '#000000';
               ctx.lineWidth = 3;
-              // Draw background for better visibility
               const text = `Back angle: ${backAngle.toFixed(1)}°`;
               const x = leftHip.x * dimensions.w;
               const y = leftHip.y * dimensions.h - 10;
@@ -273,12 +149,26 @@ const CameraWithPoseClient: React.FC = () => {
     return () => {
       isMounted = false;
       cancelAnimationFrame(animationFrameId);
-      poseLandmarker?.close();
     };
   }, [dimensions.w, dimensions.h]);
 
   return (
     <div style={{ position: 'relative', width: dimensions.w, height: dimensions.h }}>
+      <div style={{ position: 'absolute', zIndex: 10, left: 10, top: 10 }}>
+        <button
+          onClick={() => setFacingMode('user')}
+          disabled={facingMode === 'user'}
+          style={{ marginRight: 8 }}
+        >
+          Front Camera
+        </button>
+        <button
+          onClick={() => setFacingMode('environment')}
+          disabled={facingMode === 'environment'}
+        >
+          Back Camera
+        </button>
+      </div>
       <video
         ref={videoRef}
         autoPlay
