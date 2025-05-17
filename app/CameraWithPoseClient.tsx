@@ -27,8 +27,6 @@ type CameraDevice = {
   label: string;
 };
 
-const ASPECT_RATIO = 4 / 3;
-
 const CameraWithPoseClient: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -36,18 +34,24 @@ const CameraWithPoseClient: React.FC = () => {
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isCameraOn, setIsCameraOn] = useState(false);
-  const [containerWidth, setContainerWidth] = useState(400);
+  const [videoDims, setVideoDims] = useState({ width: 400, height: 300 });
   const animationRef = useRef<number | null>(null);
 
-  // Responsive width setup
+  // Responsive width setup (max 600px or screen width)
   useEffect(() => {
-    const updateWidth = () => {
-      const w = Math.min(window.innerWidth, 600);
-      setContainerWidth(w);
+    const updateDims = () => {
+      setVideoDims((dims) => {
+        const maxWidth = Math.min(window.innerWidth, 600);
+        const ratio = dims.width / dims.height;
+        return {
+          width: maxWidth,
+          height: Math.round(maxWidth / ratio),
+        };
+      });
     };
-    updateWidth();
-    window.addEventListener('resize', updateWidth);
-    return () => window.removeEventListener('resize', updateWidth);
+    updateDims();
+    window.addEventListener('resize', updateDims);
+    return () => window.removeEventListener('resize', updateDims);
   }, []);
 
   // Get camera devices
@@ -93,9 +97,15 @@ const CameraWithPoseClient: React.FC = () => {
 
       if (videoRef.current) {
         videoRef.current.onloadedmetadata = () => {
-          setTimeout(() => {
-            setContainerWidth(Math.min(videoRef.current!.videoWidth, window.innerWidth, 600));
-          }, 100);
+          const vw = videoRef.current!.videoWidth;
+          const vh = videoRef.current!.videoHeight;
+          // Responsive: fit width to screen, scale height by real aspect ratio
+          const maxWidth = Math.min(window.innerWidth, 600);
+          const scale = maxWidth / vw;
+          setVideoDims({
+            width: maxWidth,
+            height: Math.round(vh * scale),
+          });
         };
       }
     } catch {
@@ -135,8 +145,7 @@ const CameraWithPoseClient: React.FC = () => {
     let isMounted = true;
 
     const runPoseDetection = async () => {
-      if (!isCameraOn || !containerWidth) return;
-      const containerHeight = Math.round(containerWidth / ASPECT_RATIO);
+      if (!isCameraOn || !videoDims.width || !videoDims.height) return;
 
       if (!poseLandmarker) {
         const vision = await FilesetResolver.forVisionTasks(WASM_PATH);
@@ -161,9 +170,9 @@ const CameraWithPoseClient: React.FC = () => {
           isCameraOn
         ) {
           const ctx = canvasRef.current.getContext('2d')!;
-          ctx.clearRect(0, 0, containerWidth, containerHeight);
+          ctx.clearRect(0, 0, videoDims.width, videoDims.height);
 
-          ctx.drawImage(videoRef.current, 0, 0, containerWidth, containerHeight);
+          ctx.drawImage(videoRef.current, 0, 0, videoDims.width, videoDims.height);
 
           const results = poseLandmarker.detectForVideo(videoRef.current, performance.now());
 
@@ -179,9 +188,9 @@ const CameraWithPoseClient: React.FC = () => {
             }
             const isBent = backAngle !== null && backAngle < 140;
 
-            drawingUtils.drawLandmarks(lm, { color: isBent ? '#FF0000' : '#00FF00', lineWidth: 3 });
+            drawingUtils.drawLandmarks(lm, { color: isBent ? '#FF69B4' : '#00CFFF', lineWidth: 3 });
             drawingUtils.drawConnectors(lm, PoseLandmarker.POSE_CONNECTIONS, {
-              color: isBent ? '#FF0000' : '#00FF00',
+              color: isBent ? '#FF69B4' : '#00CFFF',
               lineWidth: 5,
             });
 
@@ -192,8 +201,8 @@ const CameraWithPoseClient: React.FC = () => {
               ctx.strokeStyle = '#fff';
               ctx.lineWidth = 4;
               const text = `Back angle: ${backAngle.toFixed(1)}°`;
-              const x = leftHip.x * containerWidth;
-              const y = leftHip.y * (containerWidth / ASPECT_RATIO) - 10;
+              const x = leftHip.x * videoDims.width;
+              const y = leftHip.y * videoDims.height - 10;
               ctx.strokeText(text, x, y);
               ctx.fillText(text, x, y);
               ctx.restore();
@@ -214,7 +223,7 @@ const CameraWithPoseClient: React.FC = () => {
       isMounted = false;
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
-  }, [containerWidth, isCameraOn]);
+  }, [videoDims.width, videoDims.height, isCameraOn]);
 
   // Cute Camera Dropdown
   const CuteCameraSelect = (
@@ -285,7 +294,7 @@ const CameraWithPoseClient: React.FC = () => {
         <Button
           variant="contained"
           sx={{
-            background: 'linear-gradient(90deg,rgb(255, 105, 105) 0%, rgb(255, 105, 105) 100%)',
+            background: 'linear-gradient(90deg, #FF69B4 0%, #FFB347 100%)',
             color: '#fff',
             fontWeight: 'bold',
             borderRadius: 3,
@@ -298,12 +307,12 @@ const CameraWithPoseClient: React.FC = () => {
           onClick={handleStartCamera}
           disabled={isCameraOn || !selectedDeviceId}
         >
-          Start Camera
+          💖 Start Camera
         </Button>
         <Button
           variant="contained"
           sx={{
-            background: 'linear-gradient(90deg, #00CFFF 0%, #00CFFF 100%)',
+            background: 'linear-gradient(90deg, #00CFFF 0%, #FF69B4 100%)',
             color: '#fff',
             fontWeight: 'bold',
             borderRadius: 3,
@@ -316,7 +325,7 @@ const CameraWithPoseClient: React.FC = () => {
           onClick={handleStopCamera}
           disabled={!isCameraOn}
         >
-          Stop Camera
+          🛑 Stop Camera
         </Button>
       </Box>
 
@@ -325,8 +334,8 @@ const CameraWithPoseClient: React.FC = () => {
         style={{
           position: 'relative',
           width: '100%',
-          maxWidth: 600,
-          aspectRatio: `${ASPECT_RATIO}`,
+          maxWidth: videoDims.width,
+          aspectRatio: `${videoDims.width} / ${videoDims.height}`,
           background: '#222',
           borderRadius: 16,
           overflow: 'hidden',
@@ -336,8 +345,8 @@ const CameraWithPoseClient: React.FC = () => {
         <video ref={videoRef} autoPlay playsInline style={{ display: 'none' }} />
         <canvas
           ref={canvasRef}
-          width={containerWidth}
-          height={Math.round(containerWidth / ASPECT_RATIO)}
+          width={videoDims.width}
+          height={videoDims.height}
           style={{
             width: '100%',
             height: '100%',
