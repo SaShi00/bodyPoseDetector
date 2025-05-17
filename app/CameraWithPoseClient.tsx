@@ -294,7 +294,7 @@ const CameraWithPoseClient: React.FC = () => {
         <Button
           variant="contained"
           sx={{
-            background: 'linear-gradient(90deg, #FF69B4 0%, #FFB347 100%)',
+            background: 'linear-gradient(90deg,rgb(255, 105, 105) 0%,rgb(255, 105, 105) 100%)',
             color: '#fff',
             fontWeight: 'bold',
             borderRadius: 3,
@@ -307,12 +307,12 @@ const CameraWithPoseClient: React.FC = () => {
           onClick={handleStartCamera}
           disabled={isCameraOn || !selectedDeviceId}
         >
-          💖 Start Camera
+          Start Camera
         </Button>
         <Button
           variant="contained"
           sx={{
-            background: 'linear-gradient(90deg, #00CFFF 0%, #FF69B4 100%)',
+            background: 'linear-gradient(90deg, #00CFFF 0%, #00CFFF 100%)',
             color: '#fff',
             fontWeight: 'bold',
             borderRadius: 3,
@@ -325,7 +325,7 @@ const CameraWithPoseClient: React.FC = () => {
           onClick={handleStopCamera}
           disabled={!isCameraOn}
         >
-          🛑 Stop Camera
+          Stop Camera
         </Button>
       </Box>
 
