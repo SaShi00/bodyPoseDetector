@@ -188,16 +188,16 @@ const CameraWithPoseClient: React.FC = () => {
             }
             const isBent = backAngle !== null && backAngle < 140;
 
-            drawingUtils.drawLandmarks(lm, { color: isBent ? '#FF69B4' : '#00CFFF', lineWidth: 3 });
+            drawingUtils.drawLandmarks(lm, { color: isBent ? '#FF0000' : '#00FF00', lineWidth: 3 });
             drawingUtils.drawConnectors(lm, PoseLandmarker.POSE_CONNECTIONS, {
-              color: isBent ? '#FF69B4' : '#00CFFF',
+              color: isBent ? '#FF0000' : '#00FF00',
               lineWidth: 5,
             });
 
             if (backAngle !== null) {
               ctx.save();
               ctx.font = 'bold 32px Arial';
-              ctx.fillStyle = isBent ? '#FF69B4' : '#00CFFF';
+              ctx.fillStyle = isBent ? '#FF0000' : '#00FF00';
               ctx.strokeStyle = '#fff';
               ctx.lineWidth = 4;
               const text = `Back angle: ${backAngle.toFixed(1)}°`;
